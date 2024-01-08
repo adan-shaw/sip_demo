@@ -1,0 +1,6 @@
+sip
+sip-debug
+.vscode
+*.so
+*.o
+*.a
