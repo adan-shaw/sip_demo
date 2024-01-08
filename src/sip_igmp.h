@@ -4,7 +4,7 @@
  struct sip_igmphdr 
 {
 	__u8 type;
-	__u8 code;										/*For newer IGMP*/
+	__u8 code;										//For newer IGMP
 	__u16 csum;
 	__u32 group;
 };

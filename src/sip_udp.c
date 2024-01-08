@@ -1,10 +1,5 @@
 #include "sip.h"
 
-#define UDP_HTABLE_SIZE (128)		/*UDP控制单元的大小*/
-
-#define UDP_PORT_RANGE_START (4096)
-#define UDP_PORT_RANGE_END (0x7fff)
-
 static struct udp_pcb *udp_pcbs[UDP_HTABLE_SIZE];	/*UDP控制单元数组*/
 
 static __u16 found_a_port ()

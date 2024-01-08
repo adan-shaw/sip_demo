@@ -82,7 +82,7 @@ enum
 	__ICMP_MIB_MAX
 };
 
- /*ICMP*/
+//ICMP
 #define ICMP_MIB_DUMMY (__ICMP_MIB_MAX)
 #define ICMP_MIB_MAX ((__ICMP_MIB_MAX) + 1)
 	struct icmp_control;
@@ -91,32 +91,30 @@ struct skbuff;
 
 struct icmp_control
 {
-	void (*handler) (struct net_device * dev, struct skbuff * skb);	/*处理函数*/
-	short error;									/*错误方式*/
+	void (*handler) (struct net_device * dev, struct skbuff * skb);//处理函数
+	short error;									//错误方式
 };
 
-/*
- *Build xmit assembly blocks
-*/
+//Build xmit assembly blocks
 struct sip_icmphdr
 {
-	__u8 type;										/*ICMP协议类型*/
-	__u8 code;										/*ICMP类型代码*/
-	__u16 checksum;								/*ICMP的数据校验和*/
-	union													/*数据部分*/
+	__u8 type;										//ICMP协议类型
+	__u8 code;										//ICMP类型代码
+	__u16 checksum;								//ICMP的数据校验和
+	union													//数据部分
 	{
 		struct
 		{
-			__u16 id;									/*ID标识*/
-			__u16 sequence;						/*数据的序列号*/
-		} echo;											/*回显数据*/
-		__u32 gateway;							/*网关*/
+			__u16 id;									//ID标识
+			__u16 sequence;						//数据的序列号
+		} echo;											//回显数据
+		__u32 gateway;							//网关
 
 		struct
 		{
 			__u16 __unused;
-			__u16 mtu;
-		  /*MTU*/} frag;						/*分片*/
+			__u16 mtu;								//MTU
+		} frag;											//分片
 	} un;
 };
 
@@ -131,8 +129,7 @@ struct icmp_bxm
 		__u32 times[3];
 	} data;
 	int head_len;
-	//struct ip_options replyopts;
-	__u8 optbuf[40];
+	__u8 optbuf[40];//struct ip_options replyopts;
 };
 
 #endif	/*__SIP_ICMP_H__*/

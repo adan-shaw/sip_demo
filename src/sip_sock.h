@@ -1,9 +1,6 @@
 #ifndef __SIP_SOCK_H__
 #define __SIP_SOCK_H__
 
-struct sock;
-
-#if 0
 struct sock_common
 {
 	unsigned short skc_family;
@@ -13,15 +10,11 @@ struct sock_common
 
 struct sock
 {
-	/*
-	 * Now struct inet_timewait_sock also uses sock_common, so please just
-	 * don't add nothing before this first member (__sk_common) --acme
-	*/
+	//Now struct inet_timewait_sock also uses sock_common, so please just don't add nothing before this first member (__sk_common) --acme
 	struct sock_common __sk_common;
-
-#define sk_family__sk_common.skc_family
-#define sk_state__sk_common.skc_state
-#define sk_hash__sk_common.skc_hash
+	#define sk_family __sk_common.skc_family
+	#define sk_state __sk_common.skc_state
+	#define sk_hash __sk_common.skc_hash
 
 	__u8 sk_protocol;
 	unsigned short sk_type;
@@ -45,5 +38,5 @@ struct sock
 	void *sk_security;
 };
 
-#endif
+
 #endif /*__SIP_SOCK_H__*/
