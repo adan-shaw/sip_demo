@@ -2,14 +2,14 @@
 #define __SIP_ETHER_H__
 
 /*
-#define ETH_P_IP (0x0800)//IP类型报文
-#define ETH_P_ARP (0x0806)//ARP报文
-#define ETH_ALEN (6)//以太网地址长度
-#define ETH_HLEN (14)//以太网头部长度
-#define ETH_ZLEN (60)//以太网最小长度
-#define ETH_DATA_LEN (1500)//以太网的最大负载长度
+#define ETH_P_IP (0x0800)		//IP类型报文
+#define ETH_P_ARP (0x0806)	//ARP报文
+#define ETH_ALEN (6)				//以太网地址长度
+#define ETH_HLEN (14)				//以太网头部长度
+#define ETH_ZLEN (60)				//以太网最小长度
+#define ETH_DATA_LEN (1500)	//以太网的最大负载长度
 #define ETH_FRAME_LEN (1514)//以太网最大长度
-#define ETH_P_ALL (0x0003)//使用SOCK_PACKET获取每一个包
+#define ETH_P_ALL (0x0003)	//使用SOCK_PACKET获取每一个包
 */
 
 //This is an Ethernet frame header.
