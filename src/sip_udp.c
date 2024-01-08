@@ -1,3 +1,5 @@
+#include <semaphore.h>
+#include <pthread.h>
 #include "sip.h"
 
 static struct udp_pcb *udp_pcbs[UDP_HTABLE_SIZE];//UDP控制单元数组
@@ -100,18 +102,17 @@ int SIP_UDPConnect (struct udp_pcb *pcb, struct in_addr *ipaddr, __u16 port)
 	struct udp_pcb *ipcb;
 	if (pcb->port_local == 0)				//还没有绑定端口地址
 	{
-		int err = SIP_UDPBind (pcb, &pcb->ip_local, 0);	//绑定端口
-		if (err != 0)
-			return err;
+		if (SIP_UDPBind (pcb, &pcb->ip_local, 0) != 0)//绑定端口
+			return -1;
 	}
-	pcb->ip_remote.s_addr = ipaddr->s_addr;	//目的IP地址
+	pcb->ip_remote.s_addr = ipaddr->s_addr;//目的IP地址
 	pcb->port_remote = port;				//目的端口
 	//将UDP的PCB加入PCB链表中
 	for (ipcb = udp_pcbs[pcb->port_local]; ipcb != NULL; ipcb = ipcb->next)
 	{
 		if (pcb == ipcb)							//已经存在于链表中
 		{
-			return 0;
+			return -1;
 		}
 	}
 	//这个PCB控制单元还没有加入链表中, 将此单元加入到链表的头部
@@ -175,12 +176,13 @@ int SIP_UDPSend (struct net_device *dev, struct udp_pcb *pcb, struct skbuff *skb
 	return SIP_UDPSendTo (dev, pcb, skb, &pcb->ip_remote, pcb->port_remote);
 }
 
-#include <semaphore.h>
-#include <pthread.h>
+
 int SIP_UDPInput (struct net_device *dev, struct skbuff *skb)
 {
 	__u16 port = ntohs (skb->th.udph->dest);
 	struct udp_pcb *upcb = NULL;
+	struct sock *sock;
+	struct skbuff *recvl;
 	//根据端口地址查找控制链表结构中的控制单元
 	for (upcb = udp_pcbs[port % UDP_HTABLE_SIZE]; upcb != NULL; upcb = upcb->next)
 	{
@@ -188,11 +190,11 @@ int SIP_UDPInput (struct net_device *dev, struct skbuff *skb)
 			break;
 	}
 	if (!upcb)
-		return 0;
-	struct sock *sock = upcb->sock;		//协议无关层的结构
+		return -1;
+	sock = upcb->sock;								//协议无关层的结构
 	if (!sock)
-		return 1;
-	struct skbuff *recvl = sock->skb_recv;//接收缓冲区链表头指针
+		return -1;
+	recvl = sock->skb_recv;						//接收缓冲区链表头指针
 	if (!recvl)												//为空?
 	{
 		sock->skb_recv = skb;						//挂接到头部
@@ -206,9 +208,10 @@ int SIP_UDPInput (struct net_device *dev, struct skbuff *skb)
 		skb->next = NULL;
 	}
 	sem_post (&sock->sem_recv);				//接收缓冲区计数值增加
+	return 0;
 }
 
 int SIP_UDPSendOutput (struct net_device *dev, struct skbuff *skb, struct udp_pcb *pcb, struct in_addr *src, struct in_addr *dest)
 {
-	ip_output (dev, skb, src, dest, pcb->ttl, pcb->tos, IPPROTO_UDP);
+	return ip_output (dev, skb, src, dest, pcb->ttl, pcb->tos, IPPROTO_UDP);
 }

@@ -199,7 +199,6 @@ ssize_t sip_sendto (int s, const void *buf, size_t len, int flags, const struct 
 ssize_t sip_send (int s, const void *buf, size_t len, int flags)
 {
 	struct sip_socket *socket;
-	int err;
 	socket = get_socket (s);
 	if (!socket)
 		return -1;

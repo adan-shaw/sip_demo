@@ -337,6 +337,7 @@ int ip_output (struct net_device *dev, struct skbuff *skb, struct in_addr *src, 
 	if (SIP_Chksum (skb->nh.raw, sizeof (struct sip_iphdr)))
 	{
 		DBGPRINT (DBG_LEVEL_ERROR, "ICMP check IP sum error\n");
+		return -1;
 	}
 	else
 	{
@@ -348,4 +349,5 @@ int ip_output (struct net_device *dev, struct skbuff *skb, struct in_addr *src, 
 		skb = ip_frag (dev, skb);		//进行分片
 	}
 	dev->output (skb, dev);				//通过以太网的输出函数发送数据
+	return 0;
 }

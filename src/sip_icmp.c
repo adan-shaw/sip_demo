@@ -14,7 +14,7 @@ static void icmp_echo (struct net_device *dev, struct skbuff *skb)
 	{
 		goto EXITicmp_echo;
 	}
-	icmph->type = ICMP_ECHOREPLY;		//设置类型为回显应答
+	icmph->type = ICMP_ECHOREPLY;//设置类型为回显应答
 	if (icmph->checksum >= htons (0xFFFF - (ICMP_ECHO << 8)))//如果因为修改协议类型造成进位
 	{
 		icmph->checksum += htons (ICMP_ECHO << 8) + 1;//修正校验和

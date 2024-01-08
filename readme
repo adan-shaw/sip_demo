@@ -1,0 +1,21 @@
+sip-demo project:
+	this project from a chinese book named: 
+		<Linux网络编程>
+		2010年1月清华大学出版社出版的图书, 作者是宋敬彬、孙海滨;
+
+	maybe it's another shit project, i can see there is no any usage info for this project,
+	so if you are not good at udp/sip programming, i'm pretty sure that you can not handle this project;
+	if you are a student and you want to learn udp/sip programming,
+	then be careful, this project error is not corrected yet.
+	(if i have more free time, i'll do this for you, but, leave it to next time when i got some free time okay?)
+
+	adan shaw
+	2024/1/08 in shanghai
+
+
+
+	this project is not finished yet, only passed the compile program;
+	i dont figure it out how to use it,
+	i dont fixed all the c codes bug,
+	i dont figure it out how this program logic running
+	so, this project unfinished yet

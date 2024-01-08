@@ -15,27 +15,27 @@ void DISPLAY_MAC (struct ethhdr *eth)
 
 static __u8 input (struct skbuff *pskb, struct net_device *dev)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>input\n");
 	char ef[ETH_FRAME_LEN];				//以太帧缓冲区,1514字节
 	int n, i;
 	int retval = 0;
+	struct skbuff *skb;
+
+	DBGPRINT (DBG_LEVEL_TRACE, "==>input\n");
 	//读取以太网数据, n为返回的实际捕获的以太帧的帧长
 	n = read (dev->s, ef, ETH_FRAME_LEN);
 	if (n <= 0)										//没有读到数据
 	{
 		DBGPRINT (DBG_LEVEL_ERROR, "Not datum\n");
-		retval = -1;
-		goto EXITinput;							//退出
+		return -1;
 	}
 	else													//读到数据
 	{
 		DBGPRINT (DBG_LEVEL_NOTES, "%d bytes datum\n", n);
 	};
-	struct skbuff *skb = skb_alloc (n);//申请存放刚才读取到数据的空间
+	skb = skb_alloc (n);					//申请存放刚才读取到数据的空间
 	if (!skb)											//申请失败
 	{
-		retval = -1;
-		goto EXITinput;							//退出
+		return -1;
 	}
 	memcpy (skb->head, ef, n);		//将接收到的网络数据拷贝到skb结构
 	skb->tot_len = skb->len = n;	//设置长度值
@@ -73,17 +73,17 @@ static __u8 input (struct skbuff *pskb, struct net_device *dev)
 		skb_free (skb);							//释放内存
 	}
 
-EXITinput:
 	DBGPRINT (DBG_LEVEL_TRACE, "<==input\n");
-	return 0;
+
+	return 1;
 }
 
 static __u8 output (struct skbuff *skb, struct net_device *dev)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>output\n");
-	int retval = 0;
 	struct arpt_arp *arp = NULL;
 	int times = 0, found = 0;
+	struct sip_ethhdr *eh;
+	DBGPRINT (DBG_LEVEL_TRACE, "==>output\n");
 	//发送网络数据的目的IP地址为skb所指的目的地址
 	__be32 destip = skb->nh.iph->daddr;
 	//判断目的主机和本机是否在同一个子网上
@@ -100,20 +100,17 @@ static __u8 output (struct skbuff *skb, struct net_device *dev)
 	}
 	if (!arp)											//没有找到对应的MAC地址
 	{
-		retval = 1;
-		goto EXIToutput;
+		return -1;
 	}
 	else													//找到一个对应项
 	{
-		struct sip_ethhdr *eh = skb->phy.ethh;
+		eh = skb->phy.ethh;
 		memcpy (eh->h_dest, arp->ethaddr, ETH_ALEN);	//设置目的MAC地址为项中值
 		memcpy (eh->h_source, dev->hwaddr, ETH_ALEN);	//设置源MAC地址为本机MAC值
 		eh->h_proto = htons (ETH_P_IP);								//以太网的协议类型设置为IP
 		dev->linkoutput (skb, dev);	//发送数据
 	}
-EXIToutput:
-	DBGPRINT (DBG_LEVEL_TRACE, "<==output\n");
-	return retval;
+	return 1;
 }
 
 static __u8 lowoutput (struct skbuff *skb, struct net_device *dev)
