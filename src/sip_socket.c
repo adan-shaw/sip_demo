@@ -37,7 +37,7 @@ static struct sip_socket *get_socket (int s)
 static int alloc_socket (struct sock *newsock)
 {
 	int i;
-	/*allocate a new socket identifier*/
+	//allocate a new socket identifier
 	for (i = 0; i < NUM_SOCKETS; ++i)
 	{
 		if (!sockets[i].sock)
@@ -56,47 +56,47 @@ int sip_socket (int domain, int type, int protocol)
 {
 	struct sock *sock;
 	int i = 0;
-	if (domain != AF_INET || protocol != 0)	/*协议类型不对*/
+	if (domain != AF_INET || protocol != 0)	//协议类型不对
 		return -1;
-	switch (type)									/*按照类型建立不同的套接字*/
+	switch (type)									//按照类型建立不同的套接字
 	{
-	case SOCK_DGRAM:							/*数据报类型*/
-		sock = (struct sock *) SIP_SockNew (SOCK_DGRAM);	/*建立套接字*/
+	case SOCK_DGRAM:							//数据报类型
+		sock = (struct sock *) SIP_SockNew (SOCK_DGRAM);	//建立套接字
 		break;
-	case SOCK_STREAM:						/*流式类型*/
+	case SOCK_STREAM:						//流式类型
 		break;
 	default:
 		return -1;
 	}
 	if (!sock)
-	{															/*建立套接字失败*/
+	{															//建立套接字失败
 		return -1;
 	}
-	i = alloc_socket (sock);			/*初始化socket变量,并分配文件描述符*/
+	i = alloc_socket (sock);			//初始化socket变量,并分配文件描述符
 	if (i == -1)
-	{															/*上述操作失败*/
-		SIP_SockDelete (sock);			/*释放sock类型变量*/
+	{															//上述操作失败
+		SIP_SockDelete (sock);			//释放sock类型变量
 		return -1;
 	}
-	sock->socket = i;							/*设置sock结构中的socket值*/
+	sock->socket = i;							//设置sock结构中的socket值
 	return i;
 }
 
 int sip_close (int s)
 {
 	struct sip_socket *socket;
-	socket = get_socket (s);			/*获得socket类型映射*/
-	if (!socket)									/*失败*/
+	socket = get_socket (s);			//获得socket类型映射
+	if (!socket)									//失败
 	{
 		return -1;
 	}
-	SIP_SockDelete (socket->sock);	/*释放sock结构*/
+	SIP_SockDelete (socket->sock);	//释放sock结构
 	if (socket->lastdata)
 	{
-		skb_free (socket->lastdata);	/*释放socket上挂接的网络数据*/
+		skb_free (socket->lastdata);	//释放socket上挂接的网络数据
 	}
-	socket->lastdata = NULL;			/*清空socket结构的网络数据*/
-	socket->sock = NULL;					/*清空sock指针*/
+	socket->lastdata = NULL;			//清空socket结构的网络数据
+	socket->sock = NULL;					//清空sock指针
 	return 0;
 }
 
@@ -106,12 +106,12 @@ int sip_bind (int sockfd, const struct sockaddr *my_addr, socklen_t addrlen)
 	struct in_addr local_addr;
 	__u16 port_local;
 	int err;
-	socket = get_socket (sockfd);	/*获得socket类型映射*/
+	socket = get_socket (sockfd);	//获得socket类型映射
 	if (!socket)
 		return -1;
 	local_addr.s_addr = ((struct sockaddr_in *) my_addr)->sin_addr.s_addr;
 	port_local = ((struct sockaddr_in *) my_addr)->sin_port;
-	err = SIP_SockBind (socket->sock, &local_addr, ntohs (port_local));	/*协议无关层的绑定函数*/
+	err = SIP_SockBind (socket->sock, &local_addr, ntohs (port_local));	//协议无关层的绑定函数
 	if (err != 0)
 	{
 		return -1;
@@ -123,7 +123,7 @@ int sip_connect (int sockfd, const struct sockaddr *serv_addr, socklen_t addrlen
 {
 	struct sip_socket *socket;
 	int err;
-	socket = get_socket (sockfd);	/*获得socket类型映射*/
+	socket = get_socket (sockfd);	//获得socket类型映射
 	if (!socket)
 		return -1;
 	struct in_addr remote_addr;
@@ -140,36 +140,36 @@ ssize_t sip_recvfrom (int s, void *buf, size_t len, int flags, struct sockaddr *
 	struct skbuff *skb;
 	struct sockaddr_in *f = (struct sockaddr_in *) from;
 	int len_copy = 0;
-	socket = get_socket (s);			/*获得socket类型映射*/
+	socket = get_socket (s);			//获得socket类型映射
 	if (!socket)
 		return -1;
 	if (!socket->lastdata)
-	{															/*lastdata中没有有剩余数据*/
-		socket->lastdata = (struct skbuff *) SIP_SockRecv (socket->sock);	/*接收数据*/
-		socket->lastoffset = 0;			/*偏离量为0*/
+	{															//lastdata中没有有剩余数据
+		socket->lastdata = (struct skbuff *) SIP_SockRecv (socket->sock);	//接收数据
+		socket->lastoffset = 0;			//偏离量为0
 	}
-	skb = socket->lastdata;				/*skbuff指针*/
-	/*填充用户出入参数*/
-	*fromlen = sizeof (struct sockaddr_in);	/*地址结构长度*/
-	f->sin_family = AF_INET;			/*地址类型*/
-	f->sin_addr.s_addr = skb->nh.iph->saddr;	/*来源IP地址*/
-	f->sin_port = skb->th.udph->source;	/*来源端口*/
-	len_copy = skb->len - socket->lastoffset;	/*计算lastdata中剩余的数据*/
+	skb = socket->lastdata;				//skbuff指针
+	//填充用户出入参数
+	*fromlen = sizeof (struct sockaddr_in);	//地址结构长度
+	f->sin_family = AF_INET;			//地址类型
+	f->sin_addr.s_addr = skb->nh.iph->saddr;	//来源IP地址
+	f->sin_port = skb->th.udph->source;	//来源端口
+	len_copy = skb->len - socket->lastoffset;	//计算lastdata中剩余的数据
 	if (len > len_copy)
-	{															/*用户缓冲区可以放下所有数据*/
-		memcpy (buf,								/*全部拷贝到用户缓冲区*/
+	{															//用户缓冲区可以放下所有数据
+		memcpy (buf,								//全部拷贝到用户缓冲区
 			skb->data + socket->lastoffset, len_copy);
-		skb_free (skb);							/*释放此结构*/
-		socket->lastdata = NULL;		/*清空网络数据结构指针*/
-		socket->lastoffset = 0;			/*偏移量重新设置为0*/
+		skb_free (skb);							//释放此结构
+		socket->lastdata = NULL;		//清空网络数据结构指针
+		socket->lastoffset = 0;			//偏移量重新设置为0
 	}
 	else
-	{															/*用户缓冲区放不下整个数据*/
-		len_copy = len;							/*仅拷贝缓冲区大小的数据*/
-		memcpy (buf, skb + socket->lastoffset, len_copy);	/*拷贝*/
-		socket->lastoffset += len_copy;	/*偏移量增加*/
+	{															//用户缓冲区放不下整个数据
+		len_copy = len;							//仅拷贝缓冲区大小的数据
+		memcpy (buf, skb + socket->lastoffset, len_copy);	//拷贝
+		socket->lastoffset += len_copy;	//偏移量增加
 	}
-	return len_copy;							/*返回拷贝的值*/
+	return len_copy;							//返回拷贝的值
 }
 
 ssize_t sip_recv (int s, void *buf, size_t len, int flags)
@@ -182,17 +182,17 @@ ssize_t sip_sendto (int s, const void *buf, size_t len, int flags, const struct 
 	struct sip_socket *socket;
 	struct in_addr remote_addr;
 	struct sockaddr_in *to_in = (struct sockaddr_in *) to;
-	/*网络数据头部的长度*/
+	//网络数据头部的长度
 	int l_head = sizeof (struct sip_ethhdr) + sizeof (struct sip_iphdr) + sizeof (struct sip_udphdr);
-	int size = l_head + len;			/*数据总长度*/
-	struct skbuff *skb = skb_alloc (size);	/*申请空间*/
-	char *data = skb_put (skb, l_head);	/*设置data指针*/
-	memcpy (data, buf, len);			/*将用户数据拷贝到缓冲区*/
-	remote_addr = to_in->sin_addr;	/*设置目的IP地址*/
+	int size = l_head + len;			//数据总长度
+	struct skbuff *skb = skb_alloc (size);	//申请空间
+	char *data = skb_put (skb, l_head);	//设置data指针
+	memcpy (data, buf, len);			//将用户数据拷贝到缓冲区
+	remote_addr = to_in->sin_addr;	//设置目的IP地址
 	socket = get_socket (s);
 	if (!socket)
 		return -1;
-	SIP_SockSendTo (socket->sock, skb, &remote_addr, to_in->sin_port);	/*发送数据*/
+	SIP_SockSendTo (socket->sock, skb, &remote_addr, to_in->sin_port);	//发送数据
 	return len;
 }
 

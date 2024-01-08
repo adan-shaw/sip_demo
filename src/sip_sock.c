@@ -14,8 +14,7 @@ struct sock *sip_get_sock (int fd)
  * @param t the type of 'connection' to create (@seeenum netconn_type)
  * @param proto the IP protocol for RAW IP pcbs
  * @param callback a function to call on status changes (RX available, TX'ed)
- * @return a newly allocated struct sock or
- *         NULL on memory error
+ * @return a newly allocated struct sock or NULL on memory error
 */
 struct sock *SIP_SockNew (int t)
 {
@@ -140,32 +139,33 @@ int SIP_SockDisconnect (struct sock *sock)
 */
 struct skbuff *SIP_SockRecv (struct sock *sock)
 {
+	struct timespec timeout;
 	struct skbuff *skb_recv = NULL;
 	int num = 0;
-	if (sem_getvalue (&sock->sem_recv, &num))	/*获得信号量的值*/
-	{															/*没有接收到网络数据*/
-		struct timespec timeout;
+	if (sem_getvalue (&sock->sem_recv, &num))		//获得信号量的值
+	{
+	//没有接收到网络数据
 #if 0
 		struct timespec
 		{
-			time_t tv_sec;						/*Seconds*/
-			long tv_nsec;							/*Nanoseconds [0 .. 999999999]*/
+			time_t tv_sec;						//Seconds
+			long tv_nsec;							//Nanoseconds [0 .. 999999999]
 		};
 #endif
-		timeout.tv_sec = sock->recv_timeout;	/*超时时间为sock结构中设置*/
+		timeout.tv_sec = sock->recv_timeout;			//超时时间为sock结构中设置
 		timeout.tv_nsec = 0;
-		sem_timedwait (&sock->sem_recv, &timeout);	/*超时等待网络数据的到来*/
+		sem_timedwait (&sock->sem_recv, &timeout);//超时等待网络数据的到来
 	}
 	else
 	{
-		sem_wait (&sock->sem_recv);	/*已经有数据,直接获取数据*/
+		sem_wait (&sock->sem_recv);								//已经有数据,直接获取数据
 	}
-	skb_recv = sock->skb_recv;		/*获得接收缓冲区的指针头部*/
+	skb_recv = sock->skb_recv;									//获得接收缓冲区的指针头部
 	if (skb_recv == NULL)
 		return NULL;
-	sock->skb_recv = skb_recv->next;	/*将头部的网络数据单元从接收缓冲区上摘除*/
+	sock->skb_recv = skb_recv->next;						//将头部的网络数据单元从接收缓冲区上摘除
 	skb_recv->next = NULL;
-	return skb_recv;							/*返回一个网络结构*/
+	return skb_recv;														//返回一个网络结构
 }
 
 /*

@@ -3,61 +3,61 @@
 struct skbuff *skb_alloc (__u32 size)
 {
 	DBGPRINT (DBG_LEVEL_MOMO, "==>skb_alloc\n");
-	struct skbuff *skb = (struct skbuff *) malloc (sizeof (struct skbuff));	/*申请skbuff结构内存空间*/
-	if (!skb)											/*失败*/
+	struct skbuff *skb = (struct skbuff *) malloc (sizeof (struct skbuff));//申请skbuff结构内存空间
+	if (!skb)											//失败
 	{
 		DBGPRINT (DBG_LEVEL_ERROR, "Malloc skb header error\n");
-		goto EXITskb_alloc;					/*退出*/
+		goto EXITskb_alloc;					//退出
 	}
-	memset (skb, 0, sizeof (struct skbuff));	/*初始化skbuff内存结构*/
-	size = SKB_DATA_ALIGN (size);	/*按照系统设置对申请空间的大小进行规整化*/
-	skb->head = (__u8 *) malloc (size);	/*申请数据区域内存,并保存在head指针中*/
-	if (!skb->head)								/*申请内存失败*/
+	memset (skb, 0, sizeof (struct skbuff));	//初始化skbuff内存结构
+	size = SKB_DATA_ALIGN (size);	//按照系统设置对申请空间的大小进行规整化
+	skb->head = (__u8 *) malloc (size);				//申请数据区域内存,并保存在head指针中
+	if (!skb->head)								//申请内存失败
 	{
 		DBGPRINT (DBG_LEVEL_ERROR, "Malloc skb data error\n");
-		free (skb);									/*释放之前申请成功的skbuff结构内存*/
-		goto EXITskb_alloc;					/*退出*/
+		free (skb);									//释放之前申请成功的skbuff结构内存
+		goto EXITskb_alloc;					//退出
 	}
-	memset (skb->head, 0, size);	/*初始化用户内存区*/
-	skb->end = skb->head + size;	/*end指针位置初始化*/
-	skb->data = skb->head;				/*data指针初始化为和head一致*/
-	skb->tail = skb->data;				/*tail最初和data一致*/
-	skb->next = NULL;							/*next初始化为空*/
-	skb->tot_len = 0;							/*有用数据总长度为0*/
-	skb->len = 0;									/*当前结构中的数据长度为0*/
+	memset (skb->head, 0, size);	//初始化用户内存区
+	skb->end = skb->head + size;	//end指针位置初始化
+	skb->data = skb->head;				//data指针初始化为和head一致
+	skb->tail = skb->data;				//tail最初和data一致
+	skb->next = NULL;							//next初始化为空
+	skb->tot_len = 0;							//有用数据总长度为0
+	skb->len = 0;									//当前结构中的数据长度为0
 	DBGPRINT (DBG_LEVEL_MOMO, "<==skb_alloc\n");
-	return skb;										/*返回成功的指针*/
+	return skb;										//返回成功的指针
 
 EXITskb_alloc:
-	return NULL;									/*错误,返回空*/
+	return NULL;									//错误,返回空
 }
 
 void skb_free (struct skbuff *skb)
 {
-	if (skb)											/*判断结构是否为空*/
+	if (skb)											//判断结构是否为空
 	{
-		if (skb->head)							/*判断是否有用户空间*/
-			free (skb->head);					/*释放用户空间内存*/
-		free (skb);									/*释放skb结构内存空间*/
+		if (skb->head)							//判断是否有用户空间
+			free (skb->head);					//释放用户空间内存
+		free (skb);									//释放skb结构内存空间
 	}
 }
 
 void skb_clone (struct skbuff *from, struct skbuff *to)
 {
-	memcpy (to->head, from->head, from->end - from->head);	/*拷贝用户数据*/
-	to->phy.ethh = (struct sip_ethhdr *) skb_put (to, ETH_HLEN);	/*更改目的结构以太网的指针位置*/
-	to->nh.iph = (struct sip_iphdr *) skb_put (to, IPHDR_LEN);	/*更改IP头部的指针位置*/
+	memcpy (to->head, from->head, from->end - from->head);			//拷贝用户数据
+	to->phy.ethh = (struct sip_ethhdr *) skb_put (to, ETH_HLEN);//更改目的结构以太网的指针位置
+	to->nh.iph = (struct sip_iphdr *) skb_put (to, IPHDR_LEN);	//更改IP头部的指针位置
 }
 
 __u8 *skb_put (struct skbuff *skb, __u32 len)
 {
 	DBGPRINT (DBG_LEVEL_MOMO, "==>skb_put\n");
-	__u8 *tmp = skb->tail;				/*保存尾部指针位置*/
-	skb->tail += len;							/*移动尾部指针*/
-	skb->len -= len;							/*长度当前网络数据长度减少*/
+	__u8 *tmp = skb->tail;				//保存尾部指针位置
+	skb->tail += len;							//移动尾部指针
+	skb->len -= len;							//长度当前网络数据长度减少
 	//skb->tot_len += len;
 	DBGPRINT (DBG_LEVEL_MOMO, "<==skb_put\n");
-	return tmp;										/*返回尾部指针位置*/
+	return tmp;										//返回尾部指针位置
 }
 
 /*CRC16校验和计算icmp_cksum
@@ -69,26 +69,25 @@ len:数据长度
 #if 0
 unsigned short cksum (__u8 * data, int len)
 {
-	int sum = 0;									/*计算结果*/
-	int odd = len & 0x01;					/*是否为奇数*/
+	int sum = 0;									//计算结果
+	int odd = len & 0x01;					//是否为奇数
 	unsigned short *value = (unsigned short *) data;
-	/*将数据按照2字节为单位累加起来*/
-	while (len & 0xfffe)
+	while (len & 0xfffe)					//将数据按照2字节为单位累加起来
 	{
 		sum += *(unsigned short *) data;
 		data += 2;
 		len -= 2;
 	}
-	/*判断是否为奇数个数据, 若ICMP报头为奇数个字节, 会剩下最后一字节.*/
+	//判断是否为奇数个数据, 若ICMP报头为奇数个字节, 会剩下最后一字节.
 
 	if (odd)
 	{
 		unsigned short tmp = ((*data) << 8) & 0xff00;
 		sum += tmp;
 	}
-	sum = (sum >> 16) + (sum & 0xffff);	/*高低位相加*/
-	sum += (sum >> 16);						/*将溢出位加入*/
-	return ~sum;									/*返回取反值*/
+	sum = (sum >> 16) + (sum & 0xffff);//高低位相加
+	sum += (sum >> 16);						//将溢出位加入
+	return ~sum;									//返回取反值
 }
 #else
 static __u16 SIP_ChksumStandard (void *dataptr, __u16 len)
@@ -97,14 +96,14 @@ static __u16 SIP_ChksumStandard (void *dataptr, __u16 len)
 	__u16 src;
 	__u8 *octetptr;
 	acc = 0;
-	/*dataptr may be at odd or even addresses*/
+	//dataptr may be at odd or even addresses
 	octetptr = (__u8 *) dataptr;
 	while (len > 1)
 	{
-		/*declare first octet as most significant thus assume network order, ignoring host order*/
+		//declare first octet as most significant thus assume network order, ignoring host order
 		src = (*octetptr) << 8;
 		octetptr++;
-		/*declare second octet as least significant*/
+		//declare second octet as least significant
 		src |= (*octetptr);
 		octetptr++;
 		acc += src;
@@ -112,20 +111,20 @@ static __u16 SIP_ChksumStandard (void *dataptr, __u16 len)
 	}
 	if (len > 0)
 	{
-		/*accumulate remaining octet*/
+		//accumulate remaining octet
 		src = (*octetptr) << 8;
 		acc += src;
 	}
-	/*add deferred carry bits*/
+	//add deferred carry bits
 	acc = (acc >> 16) + (acc & 0x0000ffffUL);
 	if ((acc & 0xffff0000) != 0)
 	{
 		acc = (acc >> 16) + (acc & 0x0000ffffUL);
 	}
 
-	/*This maybe a little confusing: reorder sum using htons()
+	/* This maybe a little confusing: reorder sum using htons()
 	   instead of ntohs() since it has a little less call overhead.
-	   The caller must invert bits for Internet sum !*/
+	   The caller must invert bits for Internet sum ! */
 	return htons ((__u16) acc);
 }
 
@@ -159,7 +158,7 @@ __u16 SIP_ChksumPseudo (struct skbuff *skb, struct in_addr *src, struct in_addr 
 	__u32 acc = 0;
 	__u8 swapped = 0;
 	//少了一句!! if / while
-	{
+	//{
 		acc += SIP_Chksum (skb->data, skb->end - skb->data);
 		while ((acc >> 16) != 0)
 		{
@@ -170,12 +169,12 @@ __u16 SIP_ChksumPseudo (struct skbuff *skb, struct in_addr *src, struct in_addr 
 			swapped = 1 - swapped;
 			acc = ((acc & 0xff) << 8) | ((acc & 0xff00UL) >> 8);
 		}
-	}
+	//}
 	if (swapped)
 	{
 		acc = ((acc & 0xff) << 8) | ((acc & 0xff00UL) >> 8);
 	}
-	/*为头部校验和*/
+	//为头部校验和
 	acc += (src->s_addr & 0xffffUL);
 	acc += ((src->s_addr >> 16) & 0xffffUL);
 	acc += (dest->s_addr & 0xffffUL);

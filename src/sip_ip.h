@@ -56,6 +56,13 @@ struct sip_iphdr
 #define IP_ADDR_ANY_VALUE (0x00000000UL)
 #define IP_ADDR_BROADCAST_VALUE (0xffffffffUL)
 
+#define IP_REASS_FLAG_LASTFRAG (0x01)
+#define FRAG_OFFSET(iph) (ntohs(iph->frag_off & 0x1FFF)<<3)
+#define FRAG_LENGTH(iph) (ntohs(iph->tot_len) - IPHDR_LEN)
+
+#define IP_FREE_REASS(ipr) do { struct skbuff *skb = NULL, *skb_prev = NULL; for (skb_prev = skb = ipr->skb; skb != NULL; skb_prev = skb, skb = skb->next, skb_free (skb_prev)); free (ipr); } while (0);
+#define IPREASS_TIMEOUT (3)				//IP分组重组的超时时间为3秒
+
 //IP reassembly helper struct. This is exported because memp needs to know the size.
 
 struct sip_reass
