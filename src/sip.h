@@ -63,11 +63,11 @@ NETCONN_EVT_SENDMINUS
 #define DBG_LEVEL_PANIC (700)
 #define DBG_LEVEL_SILENT (800)
 #define DGB_LEVEL DBG_LEVEL_ERROR
-#define DBGPRINT(level, args...) do{ if (level >= DGB_LEVEL) printf (args); } while (0);
+#define DBGPRINT(level, args, ...) do{ if (level >= DGB_LEVEL) printf (args); } while (0);
 
 #define samemac(dest, host) (dest[0] == host[0] && dest[1] == host[1] && dest[2] == host[2] && dest[3] == host[3] && dest[4] == host[4] && dest[5] == host[5])
 #define WORDSIZE (4)
-#define SKB_DATA_ALIGN(X) (((X) + (WORDSIZE - 1)) & ~ (WORDSIZE - 1))
+#define SKB_DATA_ALIGN(X) (((X) + (WORDSIZE - 1)) &~ (WORDSIZE - 1))
 
 extern struct skbuff *skb_alloc (unsigned int size);
 

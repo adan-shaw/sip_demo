@@ -25,7 +25,6 @@ struct udp_pcb *SIP_UDPNew (void)
 void SIP_UDPRemove (struct udp_pcb *pcb)
 {
 	struct udp_pcb *pcb_t;
-	int i = 0;
 	if (!pcb)
 	{																//pcb为空
 		return;
@@ -55,8 +54,7 @@ void SIP_UDPRemove (struct udp_pcb *pcb)
 int SIP_UDPBind (struct udp_pcb *pcb, struct in_addr *ipaddr, __u16 port)
 {
 	struct udp_pcb *ipcb;
-	__u8 rebind;
-	rebind = 0;
+	__u8 rebind = 0;
 	//查找udp_pcbs中是否已经存在这个控制单元
 	for (ipcb = udp_pcbs[port & (UDP_HTABLE_SIZE - 1)]; ipcb != NULL; ipcb = ipcb->next)
 	{
