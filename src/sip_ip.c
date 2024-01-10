@@ -1,34 +1,17 @@
 #include "sip.h"
 
+//成功返回1, 失败返回0
 int IP_IS_BROADCAST (struct net_device *dev, __be32 ip)
 {
-	int retval = 1;
-	//IP地址为本地任意IP地址 / 或者为按位取反IP地址
 	if ((ip == IP_ADDR_ANY_VALUE) || (~ip == IP_ADDR_ANY_VALUE))
-	{
-		DBGPRINT (DBG_LEVEL_NOTES, "IP is ANY ip\n");
-		retval = 1;										//是广播地址
-		goto EXITin_addr_isbroadcast;	//退出
-	}
+		return 1;//IP地址为本地任意IP地址 / 或者为按位取反IP地址(是广播地址)
 	else if (ip == dev->ip_host.s_addr)
-	{																//IP地址为本地地址
-		DBGPRINT (DBG_LEVEL_NOTES, "IP is local ip\n");
-		retval = 0;										//不是广播地址
-		goto EXITin_addr_isbroadcast;	//退出
-	}
-	//IP地址为本子网内地址, 与广播地址同网段
+		return 0;//IP地址为本地地址(不是广播地址)
+	
 	else if (((ip & dev->ip_netmask.s_addr) == (dev->ip_host.s_addr & dev->ip_netmask.s_addr)) && ((ip & ~dev->ip_netmask.s_addr) == (IP_ADDR_BROADCAST_VALUE & ~dev->ip_netmask.s_addr)))
-	{
-		DBGPRINT (DBG_LEVEL_NOTES, "IP is ANY ip\n");
-		retval = 1;										//是广播地址
-		goto EXITin_addr_isbroadcast;	//退出
-	}
+		return 1;//IP地址为本子网内地址, 与广播地址同网段(是广播地址)
 	else
-	{																//不是广播IP地址
-		retval = 0;
-	}
-EXITin_addr_isbroadcast:
-	return retval;
+		return 0;//不是广播IP地址
 }
 
 static struct sip_reass *ip_reass_list = NULL;	//IP重组的链表
@@ -241,7 +224,7 @@ struct skbuff *ip_frag (struct net_device *dev, struct skbuff *skb)
 
 int ip_input (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>ip_input\n");
+	printf ("==>ip_input\n");
 	struct sip_iphdr *iph = skb->nh.iph;
 	int retval = 0;
 	if (skb->len < 0)							//网络数据长度不合法
@@ -277,7 +260,7 @@ int ip_input (struct net_device *dev, struct skbuff *skb)
 	}
 	if (SIP_Chksum (skb->nh.raw, IPHDR_LEN))//计算IP头部的校验和,是否正确,为0
 	{
-		DBGPRINT (DBG_LEVEL_ERROR, "IP check sum error\n");
+		printf ("IP check sum error\n");
 		skb_free (skb);
 		retval = -1;
 		goto EXITip_input;
@@ -285,12 +268,12 @@ int ip_input (struct net_device *dev, struct skbuff *skb)
 	else														//校验和合法
 	{
 		skb->ip_summed = CHECKSUM_HW;	//设置IP校验标记
-		DBGPRINT (DBG_LEVEL_NOTES, "IP check sum success\n");
+		printf ("IP check sum success\n");
 	}
 	//不是发往本地, 目的地址不是广播地址, 源地址不是广播地址
 	if ((iph->daddr != dev->ip_host.s_addr && !IP_IS_BROADCAST (dev, iph->daddr) || IP_IS_BROADCAST (dev, iph->saddr)))
 	{
-		DBGPRINT (DBG_LEVEL_NOTES, "IP address INVALID\n");
+		printf ("IP address INVALID\n");
 		skb_free (skb);
 		retval = -1;
 		goto EXITip_input;
@@ -319,7 +302,7 @@ int ip_input (struct net_device *dev, struct skbuff *skb)
 	}
 
 EXITip_input:
-	DBGPRINT (DBG_LEVEL_TRACE, "<==ip_input\n");
+	printf ("<==ip_input\n");
 	return retval;
 
 }
@@ -336,12 +319,12 @@ int ip_output (struct net_device *dev, struct skbuff *skb, struct in_addr *src, 
 	iph->check = (SIP_Chksum (skb->nh.raw, sizeof (struct sip_iphdr)));//IP头部校验和计算
 	if (SIP_Chksum (skb->nh.raw, sizeof (struct sip_iphdr)))
 	{
-		DBGPRINT (DBG_LEVEL_ERROR, "ICMP check IP sum error\n");
+		printf ("ICMP check IP sum error\n");
 		return -1;
 	}
 	else
 	{
-		DBGPRINT (DBG_LEVEL_NOTES, "ICMP check IP sum success\n");
+		printf ("ICMP check IP sum success\n");
 	}
 	skb->len = skb->tot_len;			//设置网络数据的总长度
 	if (skb->len > dev->mtu)

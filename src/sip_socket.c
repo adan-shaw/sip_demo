@@ -1,4 +1,5 @@
 #include "sip.h"
+#include "sip_icmp.h"
 
 #define NUM_SOCKETS (4)
 
@@ -54,10 +55,10 @@ int sip_socket (int domain, int type, int protocol)
 		return -1;
 	switch (type)									//按照类型建立不同的套接字
 	{
-	case SOCK_DGRAM:							//数据报类型
+	case SOCK_DGRAM:
 		p = (struct sock *) SIP_SockNew (SOCK_DGRAM);//建立udp套接字
 		break;
-	case SOCK_STREAM:							//流式类型
+	case SOCK_STREAM:
 		p = (struct sock *) SIP_SockNew (SOCK_STREAM);//建立tcp套接字
 		break;
 	default:
@@ -73,7 +74,7 @@ int sip_socket (int domain, int type, int protocol)
 		return -1;
 	}
 	p->socket = pos;							//设置sock结构中的socket值
-	return fd;
+	return p;
 }
 
 int sip_close (int s)

@@ -41,4 +41,4 @@ struct udp_pcb
 	struct udp_pcb *prev;					//前一个UDP控制单元
 };
 
-#endif	/*__SIP_UDP_H__*/
+#endif

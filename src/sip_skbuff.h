@@ -5,8 +5,6 @@
 #include "sip_skbuff.h"
 #include "sip_arp.h"
 #include "sip_ip.h"
-#include "sip_icmp.h"
-#include "sip_tcp.h"
 #include "sip_udp.h"
 
 #define CHECKSUM_NONE (0)

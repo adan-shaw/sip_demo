@@ -23,7 +23,6 @@
 #include "sip_arp.h"
 #include "sip_ip.h"
 #include "sip_icmp.h"
-#include "sip_tcp.h"
 #include "sip_udp.h"
 #include "sip_socket.h"
 
@@ -53,17 +52,6 @@ NETCONN_EVT_SENDMINUS
 #define AF_INET (2)
 #define PF_INET (2)
 #endif
-
-#define DBG_LEVEL_IDLE (100)
-#define DBG_LEVEL_MOMO (200)
-#define DBG_LEVEL_TRACE (300)
-#define DBG_LEVEL_NOTES (400)
-#define DBG_LEVEL_WARNING (500)
-#define DBG_LEVEL_ERROR (600)
-#define DBG_LEVEL_PANIC (700)
-#define DBG_LEVEL_SILENT (800)
-#define DGB_LEVEL DBG_LEVEL_ERROR
-#define DBGPRINT(level, args, ...) do{ if (level >= DGB_LEVEL) printf (args); } while (0);
 
 #define samemac(dest, host) (dest[0] == host[0] && dest[1] == host[1] && dest[2] == host[2] && dest[3] == host[3] && dest[4] == host[4] && dest[5] == host[5])
 #define WORDSIZE (4)

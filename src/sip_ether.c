@@ -2,36 +2,92 @@
 
 static struct net_device ifdevice;
 
+//静态函数前置声明(对外不暴露)
+static int sip_init_ethnet (struct net_device *dev, struct net_device_info *info);
+static __u8 input (struct skbuff *pskb, struct net_device *dev);
+static __u8 output (struct skbuff *skb, struct net_device *dev);
+static __u8 lowoutput (struct skbuff *skb, struct net_device *dev);
+
+//公开函数(可通过extern 索取)
 struct net_device *get_netif ()
 {
 	return &ifdevice;
 }
 
+struct net_device *sip_init (void)
+{
+	struct net_device_info info;
+	strncpy(info.eth_name, "eno1", IFNAMSIZ);					//设置本机网卡设备别名
+	strncpy(info.ip_host, "192.168.56.101", 32);			//设置本机IP地址
+	strncpy(info.ip_gw, "192.168.56.1", 32);					//设置本机网关IP地址
+	strncpy(info.ip_netmask, "255.255.255.0", 32);		//设置本机子网掩码地址
+	strncpy(info.ip_multicast, "224.128.64.32", 32);	//设置目标多播IP地址
+	if(sip_init_ethnet (&ifdevice,&info) == -1){			//初始化网络设备ifdevice
+		printf("sip_init_ethnet() failed!!");
+		return NULL;
+	}
+	else
+		return &ifdevice;
+}
+
+//init 初始化 && 填充struct net_device {} 结构体, 成功返回0, 失败返回-1
+static int sip_init_ethnet (struct net_device *dev, struct net_device_info *info)
+{
+	dev->s = socket (AF_INET, SOCK_PACKET, htons (ETH_P_ALL));									//建立一个SOCK_PACKET套接字
+	if (dev->s > 0)
+	{
+		perror ("create(SOCK_PACKET)\n");
+		return -1;
+	}
+	strncpy(&dev->info, info, sizeof(struct net_device_info));									//拷贝网卡设备string 描述信息
+
+	dev->ip_host.s_addr = inet_addr (dev->info.ip_host);												//设置本机IP地址
+	dev->ip_gw.s_addr = inet_addr (dev->info.ip_gw);														//设置本机网关IP地址
+	dev->ip_netmask.s_addr = inet_addr (dev->info.ip_netmask);									//设置本机子网掩码地址
+	dev->ip_multicast.s_addr = inet_addr (dev->info.ip_multicast);							//设置目标多播IP地址
+
+	dev->to.sa_family = AF_INET;																								//设置'发送设备'的协议族
+	strncpy(dev->to.sa_data, dev->ip_multicast.s_addr, sizeof(struct in_addr));	//设置addr地址结构sa_data = 目标多播IP地址
+	bind (dev->s, &dev->to, sizeof (struct sockaddr));													//绑定套接字s到多播addr地址结构
+
+	dev->hwaddr[0] = 0x00;																		//设置MAC地址
+	dev->hwaddr[1] = 0x0c;
+	dev->hwaddr[2] = 0x29;
+	dev->hwaddr[3] = 0x73;
+	dev->hwaddr[4] = 0x9D;
+	dev->hwaddr[5] = 0x1F;
+
+	memset (dev->hwbroadcast, 0xFF, ETH_ALEN);								//设置以太网的广播地址
+	dev->hwaddr_len = ETH_ALEN;																//设置硬件地址长度
+	dev->type = ETH_P_802_3;																	//设备的类型
+	dev->input = input;																				//挂机以太网输入函数
+	dev->output = output;																			//挂接以太网输出函数
+	dev->linkoutput = lowoutput;															//挂接底层输出函数
+	return 0;
+}
+
 void DISPLAY_MAC (struct ethhdr *eth)
 {
-	printf ("From:%02x-%02x-%02x-%02x-%02x-%02x          ", eth->h_source[0], eth->h_source[1], eth->h_source[2], eth->h_source[3], eth->h_source[4], eth->h_source[5]);
-	printf ("to:%02x-%02x-%02x-%02x-%02x-%02x\n", eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5]);
+	printf ("From:%02x-%02x-%02x-%02x-%02x-%02x          to:%02x-%02x-%02x-%02x-%02x-%02x\n", \
+		eth->h_source[0], eth->h_source[1], eth->h_source[2], eth->h_source[3], eth->h_source[4], eth->h_source[5],
+		eth->h_dest[0], eth->h_dest[1], eth->h_dest[2], eth->h_dest[3], eth->h_dest[4], eth->h_dest[5]);
 }
 
 static __u8 input (struct skbuff *pskb, struct net_device *dev)
 {
 	char ef[ETH_FRAME_LEN];				//以太帧缓冲区,1514字节
 	int n, i;
-	int retval = 0;
 	struct skbuff *skb;
 
-	DBGPRINT (DBG_LEVEL_TRACE, "==>input\n");
 	//读取以太网数据, n为返回的实际捕获的以太帧的帧长
 	n = read (dev->s, ef, ETH_FRAME_LEN);
 	if (n <= 0)										//没有读到数据
 	{
-		DBGPRINT (DBG_LEVEL_ERROR, "Not datum\n");
+		printf ("Not datum\n");
 		return -1;
 	}
 	else													//读到数据
-	{
-		DBGPRINT (DBG_LEVEL_NOTES, "%d bytes datum\n", n);
-	};
+		printf ("%d bytes datum\n", n);
 	skb = skb_alloc (n);					//申请存放刚才读取到数据的空间
 	if (!skb)											//申请失败
 	{
@@ -63,7 +119,7 @@ static __u8 input (struct skbuff *pskb, struct net_device *dev)
 			}
 			break;
 		default:										//默认操作
-			DBGPRINT (DBG_LEVEL_ERROR, "ETHER:UNKNOWN\n");
+			printf ("ETHER:UNKNOWN\n");
 			skb_free (skb);						//释放内存
 			break;
 		}
@@ -73,8 +129,6 @@ static __u8 input (struct skbuff *pskb, struct net_device *dev)
 		skb_free (skb);							//释放内存
 	}
 
-	DBGPRINT (DBG_LEVEL_TRACE, "<==input\n");
-
 	return 1;
 }
 
@@ -83,7 +137,6 @@ static __u8 output (struct skbuff *skb, struct net_device *dev)
 	struct arpt_arp *arp = NULL;
 	int times = 0, found = 0;
 	struct sip_ethhdr *eh;
-	DBGPRINT (DBG_LEVEL_TRACE, "==>output\n");
 	//发送网络数据的目的IP地址为skb所指的目的地址
 	__be32 destip = skb->nh.iph->daddr;
 	//判断目的主机和本机是否在同一个子网上
@@ -115,82 +168,21 @@ static __u8 output (struct skbuff *skb, struct net_device *dev)
 
 static __u8 lowoutput (struct skbuff *skb, struct net_device *dev)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>lowoutput\n");
 	int n = 0;
 	int len = sizeof (struct sockaddr);
 	struct skbuff *p = NULL;
 	//将skbuff链结构中的网络数据发送出去: 从skbuff的第一个结构开始, 到末尾一个结束, 发送完一个数据报文后移动指针并释放结构内存
-	for (p = skb; p != NULL; skb = p, p = p->next, skb_free (skb), skb = NULL)
-	{
+	for (p = skb; p != NULL; skb = p, p = p->next, skb_free (skb), skb = NULL){
 		n = sendto (dev->s, skb->head, skb->len, 0, &dev->to, len);//发送网络数据
-		DBGPRINT (DBG_LEVEL_NOTES, "Send Number, n:%d\n", n);
+		if(n == -1){
+			perror("sendto()");
+			return -1;
+		}
+		else
+			printf ("sendto() bytes, n=%d\n", n);
 	}
-	DBGPRINT (DBG_LEVEL_TRACE, "<==lowoutput\n");
 	return 0;
 }
 
-static void sip_init_ethnet (struct net_device *dev)
-{
-	DBGPRINT (DBG_LEVEL_TRACE, "==>sip_init_ethnet\n");
-	memset (dev, 0, sizeof (struct net_device));					//初始化网络设备
-	dev->s = socket (AF_INET, SOCK_PACKET, htons (ETH_P_ALL));//建立一个SOCK_PACKET套接字
-	if (dev->s > 0)								//成功
-	{
-		DBGPRINT (DBG_LEVEL_NOTES, "create SOCK_PACKET fd success\n");
-	}
-	else													//失败
-	{
-		DBGPRINT (DBG_LEVEL_ERROR, "create SOCK_PACKET fd falure\n");
-		exit (-1);
-	}
-	//将此套接字绑定到网卡eth1上
-	strcpy (dev->name, "eth1");		//拷贝eth1到name
-	memset (&dev->to, '\0', sizeof (struct sockaddr));		//清零to地址结构
-	dev->to.sa_family = AF_INET;	//协议族
-	strcpy (dev->to.sa_data, dev->name);									//to的网卡名称
-	int r = bind (dev->s, &dev->to, sizeof (struct sockaddr));//绑定套接字s到eth1上
-	memset (dev->hwbroadcast, 0xFF, ETH_ALEN);						//设置以太网的广播地址
-#if 0
-	dev->hwaddr[0] = 0x00;
-	dev->hwaddr[1] = 0x12;
-	dev->hwaddr[2] = 0x34;
-	dev->hwaddr[3] = 0x56;
-	dev->hwaddr[4] = 0x78;
-	dev->hwaddr[5] = 0x90;
-#else
-	//设置MAC地址
-	dev->hwaddr[0] = 0x00;
-	dev->hwaddr[1] = 0x0c;
-	dev->hwaddr[2] = 0x29;
-	dev->hwaddr[3] = 0x73;
-	dev->hwaddr[4] = 0x9D;
-	dev->hwaddr[5] = 0x1F;
-#endif
-	dev->hwaddr_len = ETH_ALEN;		//设置硬件地址长度
-#if 0
-	dev->ip_host.s_addr = inet_addr ("192.168.1.250");
-	dev->ip_gw.s_addr = inet_addr ("192.168.1.1");
-	dev->ip_netmask.s_addr = inet_addr ("255.255.255.0");
-	dev->ip_broadcast.s_addr = inet_addr ("192.168.1.255");
-	dev->ip_host.s_addr = inet_addr ("10.10.10.250");
-	dev->ip_gw.s_addr = inet_addr ("10.10.10..1");
-	dev->ip_netmask.s_addr = inet_addr ("255.255.255.0");
-	dev->ip_broadcast.s_addr = inet_addr ("10.10.10.255");
-#else
-	dev->ip_host.s_addr = inet_addr ("172.16.12.250");			//设置本机IP地址
-	dev->ip_gw.s_addr = inet_addr ("172.16.12.1");					//设置本机的网关IP地址
-	dev->ip_netmask.s_addr = inet_addr ("255.255.255.0");		//设置本机的子网掩码地址
-	dev->ip_broadcast.s_addr = inet_addr ("172.16.12.255");	//设置本机的广播IP地址
-#endif
-	dev->input = input;						//挂机以太网输入函数
-	dev->output = output;					//挂接以太网输出函数
-	dev->linkoutput = lowoutput;	//挂接底层输出函数
-	dev->type = ETH_P_802_3;			//设备的类型
-	DBGPRINT (DBG_LEVEL_TRACE, "<==sip_init_ethnet\n");
-}
 
-struct net_device *sip_init (void)
-{
-	sip_init_ethnet (&ifdevice);	//初始化网络设备ifdevice
-	return &ifdevice;							//返回ifdevice
-}
+

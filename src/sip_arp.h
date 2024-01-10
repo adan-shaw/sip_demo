@@ -9,7 +9,7 @@
 
 enum arp_status
 {
-	ARP_EMPTY,										//ARP状态为空
+	ARP_EMPTY = 0,								//ARP状态为空
 	ARP_ESTABLISHED								//ARP已经映射表项建立
 };
 
@@ -36,4 +36,4 @@ struct sip_arphdr
 	__u8 ar_tip[4];								//目的IP地址
 };
 
-#endif	/*__SIP_ARP_H__*/
+#endif

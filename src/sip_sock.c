@@ -18,24 +18,20 @@ struct sock *sip_get_sock (int fd)
 */
 struct sock *SIP_SockNew (int t)
 {
-	struct sock *sock;
-	int size;
-	sock = (struct sock *) malloc (sizeof (struct sock));
+	struct sock *sock = (struct sock *) malloc (sizeof (struct sock));
 	if (sock == NULL)
-	{
 		return NULL;
-	}
-	sock->err = 0;
-	sock->type = t;
-	sock->pcb.tcp = NULL;
+
 	if (sem_init (&sock->sem_recv, 0, 0))
 	{
 		free (sock);
 		return NULL;
 	}
+	sock->err = 0;
+	sock->type = t;
+	sock->pcb.tcp = NULL;
 	sock->state = NETCONN_NONE;
-	/*initialize socket to -1 since 0 is a valid socket*/
-	sock->socket = -1;
+	sock->socket = -1;//未赋值
 	sock->recv_avail = 0;
 	sock->recv_timeout = 0;
 	return sock;

@@ -4,15 +4,14 @@ extern int IP_IS_BROADCAST (struct net_device *dev, __be32 ip);
 
 static void icmp_echo (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_echo\n");
 	struct sip_icmphdr *icmph = skb->th.icmph;
 	struct sip_iphdr *iph = skb->nh.iph;
-	DBGPRINT (DBG_LEVEL_NOTES, "tot_len:%d\n", skb->tot_len);
+	printf ("tot_len:%d\n", skb->tot_len);
 
 	//判断目的IP地址是否广播, 判断目的IP地址是否多播
 	if (IP_IS_BROADCAST (dev, skb->nh.iph->daddr) || IP_IS_MULTICAST (skb->nh.iph->daddr))
 	{
-		goto EXITicmp_echo;
+		return;
 	}
 	icmph->type = ICMP_ECHOREPLY;//设置类型为回显应答
 	if (icmph->checksum >= htons (0xFFFF - (ICMP_ECHO << 8)))//如果因为修改协议类型造成进位
@@ -26,21 +25,17 @@ static void icmp_echo (struct net_device *dev, struct skbuff *skb)
 	__be32 dest = skb->nh.iph->saddr;
 	ip_output (dev, skb, &dev->ip_host.s_addr, &dest, 255, 0, IPPROTO_ICMP);//发送应答
 
-EXITicmp_echo:
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_echo\n");
 	return;
 }
 
 static void icmp_discard (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_discard\n");
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_discard\n");
+	;
 }
 
 static void icmp_unreach (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_unreach\n");
-#if 0
+	/*
 	struct skbuff *q;
 	struct ip_hdr *iphdr;
 	struct icmp_dur_hdr *idur;
@@ -67,32 +62,31 @@ static void icmp_unreach (struct net_device *dev, struct skbuff *skb)
 	snmp_inc_icmpoutdestunreachs ();
 	ip_output (q, NULL, &(iphdr->src), ICMP_TTL, 0, IP_PROTO_ICMP);
 	skb_free (q);
-#endif
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_unreach\n");
+	*/
 }
 
 static void icmp_redirect (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_redirect\n");
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_redirect\n");
+	printf ("==>icmp_redirect\n");
+	printf ("<==icmp_redirect\n");
 }
 
 static void icmp_timestamp (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_timestamp\n");
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_timestamp\n");
+	printf ("==>icmp_timestamp\n");
+	printf ("<==icmp_timestamp\n");
 }
 
 static void icmp_address (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_address\n");
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_address\n");
+	printf ("==>icmp_address\n");
+	printf ("<==icmp_address\n");
 }
 
 static void icmp_address_reply (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_address_reply\n");
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_address_reply\n");
+	printf ("==>icmp_address_reply\n");
+	printf ("<==icmp_address_reply\n");
 }
 
 //This table is the definition of how we handle ICMP.
@@ -177,7 +171,6 @@ int icmp_reply (struct net_device *dev, struct skbuff *skb)
 
 int icmp_input (struct net_device *dev, struct skbuff *skb)
 {
-	DBGPRINT (DBG_LEVEL_TRACE, "==>icmp_input\n");
 	struct sip_icmphdr *icmph;
 	switch (skb->ip_summed)				//查看是否已经进行了校验和计算
 	{
@@ -185,23 +178,18 @@ int icmp_input (struct net_device *dev, struct skbuff *skb)
 		skb->csum = 0;
 		if (SIP_Chksum (skb->phy.raw, 0))//计算IP层的校验和
 		{
-			DBGPRINT (DBG_LEVEL_ERROR, "icmp_checksum error\n");
-			goto drop;
+			printf ("icmp_checksum error\n");
+			return -1;
 		}
 		break;
 	default:
 		break;
 	}
 	icmph = skb->th.icmph;				//ICMP头指针
-	if (icmph->type > NR_ICMP_TYPES)//类型不对
-		goto drop;
+	if (icmph->type > NR_ICMP_TYPES){//类型不对
+		return -1;
+	}
 	icmp_pointers[icmph->type].handler (dev, skb);//查找icmp_pointers中合适类型的处理函数
 
-normal:
-	DBGPRINT (DBG_LEVEL_TRACE, "<==icmp_input\n");
 	return 0;
-
-drop:
-	skb_free (skb);								//释放资源
-	goto normal;
 }

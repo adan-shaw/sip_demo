@@ -28,6 +28,7 @@ struct arpt_arp *arp_find_entry (__u32 ip)
 			return &arp_table[i];											//找到一个合适的表项
 		}
 	}
+	return NULL;
 }
 
 struct arpt_arp *update_arp_entry (__u32 ip, __u8 * ethaddr)
@@ -38,8 +39,10 @@ struct arpt_arp *update_arp_entry (__u32 ip, __u8 * ethaddr)
 		memcpy (found->ethaddr, ethaddr, ETH_ALEN);	//将给出的硬件地址拷贝到表项中
 		found->status = ARP_ESTABLISHED;						//更新ARP的表项状态
 		found->ctime = time (NULL);									//更新表项的最后更新时间
+		return found;
 	}
-	return found;
+	else
+		return NULL;
 }
 
 void arp_add_entry (__u32 ip, __u8 * ethaddr, int status)
@@ -69,15 +72,10 @@ void arp_add_entry (__u32 ip, __u8 * ethaddr, int status)
 //设备, ARP协议的类型, 源主机IP, 目的主机IP, 源主机MAC, 目的主机MAC, 解析的主机MAC
 struct skbuff *arp_create (struct net_device *dev, int type, __u32 src_ip, __u32 dest_ip, __u8 * src_hw, __u8 * dest_hw, __u8 * target_hw)
 {
-	struct skbuff *skb;
 	struct sip_arphdr *arph;
-	DBGPRINT (DBG_LEVEL_TRACE, "==>arp_create\n");
-	//请求skbuff结构内存,大小为一个最小的以太网帧,60字节
-	skb = skb_alloc (ETH_ZLEN);
-	if (skb == NULL)															//请求失败
-	{
+	struct skbuff *skb = skb_alloc (ETH_ZLEN);//请求skbuff结构内存,大小为一个最小的以太网帧,60字节
+	if (skb == NULL)
 		return NULL;
-	}
 	skb->phy.raw = skb_put (skb, sizeof (struct sip_ethhdr));	//更新物理层头部指针位置
 	skb->nh.raw = skb_put (skb, sizeof (struct sip_arphdr));	//更新网络层头部指针位置
 	arph = skb->nh.arph;													//设置ARP头部指针,便于操作
@@ -102,7 +100,6 @@ struct skbuff *arp_create (struct net_device *dev, int type, __u32 src_ip, __u32
 	else																					//没有给出目的硬件地址
 		memset (arph->ar_tha, 0, dev->hwaddr_len);	//目的硬件地址留白
 
-	DBGPRINT (DBG_LEVEL_TRACE, "<==arp_create\n");
 	return skb;
 }
 
@@ -110,7 +107,6 @@ struct skbuff *arp_create (struct net_device *dev, int type, __u32 src_ip, __u32
 void arp_send (struct net_device *dev, int type, __u32 src_ip, __u32 dest_ip, __u8 * src_hw, __u8 * dest_hw, __u8 * target_hw)
 {
 	struct skbuff *skb;
-	DBGPRINT (DBG_LEVEL_TRACE, "==>arp_send\n");
 	skb = arp_create (dev, type, src_ip, dest_ip, src_hw, dest_hw, target_hw);//建立一个ARP网络报文
 	if (skb)
 	{
@@ -118,13 +114,11 @@ void arp_send (struct net_device *dev, int type, __u32 src_ip, __u32 dest_ip, __
 	}
 	//需要深度释放指针(这里制作浅释放, 定义为局部变量, 也要深度释放指针, 因为struct skbuff 里面存放的都是指针)
 	free(skb);
-	DBGPRINT (DBG_LEVEL_TRACE, "<==arp_send\n");
 }
 
 void arp_request (struct net_device *dev, __u32 ip)
 {
 	struct skbuff *skb;
-	DBGPRINT (DBG_LEVEL_TRACE, "==>arp_request\n");
 	__u32 tip = 0;
 	//查看请求的IP地址和本机IP地址是否在同一个自网上: 请求的IP地址 == 本机的IP地址
 	if ((ip & dev->ip_netmask.s_addr) == (dev->ip_host.s_addr & dev->ip_netmask.s_addr))
@@ -140,7 +134,6 @@ void arp_request (struct net_device *dev, __u32 ip)
 	{
 		dev->linkoutput (skb, dev);									//建立skbuff成功: 通过底层网络函数发送
 	}
-	DBGPRINT (DBG_LEVEL_TRACE, "<==arp_request\n");
 }
 
 int arp_input (struct skbuff **pskb, struct net_device *dev)
@@ -148,7 +141,6 @@ int arp_input (struct skbuff **pskb, struct net_device *dev)
 	struct in_addr t_addr;
 	struct skbuff *skb = *pskb;
 	__be32 ip = 0;
-	DBGPRINT (DBG_LEVEL_TRACE, "==>arp_input\n");
 	if (skb->tot_len < sizeof (struct sip_arphdr))//接收到的网络数据总长度小于ARP头部长度
 	{
 		return -1;
@@ -162,7 +154,7 @@ int arp_input (struct skbuff **pskb, struct net_device *dev)
 	{
 	case ARPOP_REQUEST:														//ARP请求类型
 		t_addr.s_addr = *(unsigned int *) skb->nh.arph->ar_sip;//填写ARP请求源IP地址
-		DBGPRINT (DBG_LEVEL_ERROR, "ARPOP_REQUEST, FROM:%s\n", inet_ntoa (t_addr));
+		printf ("ARPOP_REQUEST, FROM:%s\n", inet_ntoa (t_addr));
 		arp_send (dev, ARPOP_REPLY, dev->ip_host.s_addr, *(__u32 *) skb->nh.arph->ar_sip, dev->hwaddr, skb->phy.ethh->h_source, skb->nh.arph->ar_sha);//向ARP请求的IP地址发送应答
 		arp_add_entry (*(__u32 *) skb->nh.arph->ar_sip, skb->phy.ethh->h_source, ARP_ESTABLISHED);//将此项ARP映射内容加入映射表
 		break;
@@ -170,7 +162,5 @@ int arp_input (struct skbuff **pskb, struct net_device *dev)
 		arp_add_entry (*(__u32 *) skb->nh.arph->ar_sip, skb->phy.ethh->h_source, ARP_ESTABLISHED);//将此项ARP映射内容加入映射表
 		break;
 	}
-	DBGPRINT (DBG_LEVEL_TRACE, "<==arp_input\n");
-
 	return 0;
 }

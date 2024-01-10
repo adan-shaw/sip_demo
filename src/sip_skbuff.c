@@ -2,11 +2,11 @@
 
 struct skbuff *skb_alloc (__u32 size)
 {
-	DBGPRINT (DBG_LEVEL_MOMO, "==>skb_alloc\n");
+	printf ("==>skb_alloc\n");
 	struct skbuff *skb = (struct skbuff *) malloc (sizeof (struct skbuff));//申请skbuff结构内存空间
 	if (!skb)											//失败
 	{
-		DBGPRINT (DBG_LEVEL_ERROR, "Malloc skb header error\n");
+		printf ("Malloc skb header error\n");
 		goto EXITskb_alloc;					//退出
 	}
 	memset (skb, 0, sizeof (struct skbuff));	//初始化skbuff内存结构
@@ -14,7 +14,7 @@ struct skbuff *skb_alloc (__u32 size)
 	skb->head = (__u8 *) malloc (size);				//申请数据区域内存,并保存在head指针中
 	if (!skb->head)								//申请内存失败
 	{
-		DBGPRINT (DBG_LEVEL_ERROR, "Malloc skb data error\n");
+		printf ("Malloc skb data error\n");
 		free (skb);									//释放之前申请成功的skbuff结构内存
 		goto EXITskb_alloc;					//退出
 	}
@@ -25,7 +25,7 @@ struct skbuff *skb_alloc (__u32 size)
 	skb->next = NULL;							//next初始化为空
 	skb->tot_len = 0;							//有用数据总长度为0
 	skb->len = 0;									//当前结构中的数据长度为0
-	DBGPRINT (DBG_LEVEL_MOMO, "<==skb_alloc\n");
+	printf ("<==skb_alloc\n");
 	return skb;										//返回成功的指针
 
 EXITskb_alloc:
@@ -51,12 +51,12 @@ void skb_clone (struct skbuff *from, struct skbuff *to)
 
 __u8 *skb_put (struct skbuff *skb, __u32 len)
 {
-	DBGPRINT (DBG_LEVEL_MOMO, "==>skb_put\n");
+	printf ("==>skb_put\n");
 	__u8 *tmp = skb->tail;				//保存尾部指针位置
 	skb->tail += len;							//移动尾部指针
 	skb->len -= len;							//长度当前网络数据长度减少
 	//skb->tot_len += len;
-	DBGPRINT (DBG_LEVEL_MOMO, "<==skb_put\n");
+	printf ("<==skb_put\n");
 	return tmp;										//返回尾部指针位置
 }
 
